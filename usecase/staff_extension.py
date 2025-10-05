@@ -6,40 +6,87 @@ def create_staffs(df):
     """
     from usecase.df_extension import clean_data
 
-    new_df = clean_data(df)
-
     staffs = []
     # Import Staff lazily to keep imports local and avoid import-time issues
     from model.Staff import Staff
 
-    if 'staff_id' in new_df.columns:
-        grouped = new_df.groupby('staff_id')
-        for staff_id, group in grouped:
-            name = group['staff_name'].iloc[0] if 'staff_name' in group.columns else None
-            # If a 'tel' column exists, take the first non-null value as the staff telephone
-            tel = None
-            if 'tel' in group.columns:
-                non_null_tels = group['tel'].dropna().tolist()
-                if non_null_tels:
-                    tel = non_null_tels[0]
-            schedule = []
-            for _, row in group.iterrows():
-                row_dict = row.to_dict()
-                row_dict.pop('staff_name', None)
-                row_dict.pop('staff_id', None)
-                # remove tel from schedule entries since it's an attribute of Staff
-                row_dict.pop('tel', None)
-                schedule.append(row_dict)
 
-            staffs.append(Staff(name=name, staffNo=staff_id, tel=tel, schedule=schedule))
-    else:
-        for _, row in new_df.iterrows():
-            row_dict = row.to_dict()
-            name = row_dict.pop('staff_name', None)
-            staff_id = row_dict.pop('staff_id', None)
-            # Extract tel if present on the row
-            tel = row_dict.pop('tel', None)
-            schedule = [row_dict]
+    grouped = df.groupby('staff_name')
+    for name, group in grouped:
+
+        staff_id = group['staff_id'].iloc[0] if 'staff_id' in group.columns else None
+        tel = group['tel'].iloc[0] if 'tel' in group.columns else None
+        schedule = get_schedule_from_row(group)
+
+        if (name != None):
             staffs.append(Staff(name=name, staffNo=staff_id, tel=tel, schedule=schedule))
 
     return staffs
+
+def get_schedule_from_row(group):
+    """Return a list of cleaned schedule dicts for the given row or group.
+
+    Mapping rules:
+    - If columns named '1'..'31' exist on the row, map those headers to their values.
+    - Drop entries where the value is NaN.
+    """
+
+    # Support both string headers '1'..'31' and integer headers 1..31
+    numeric_headers = [str(i) for i in range(1, 32)]
+    schedules = []
+    entry = {}
+
+    clean_group = clean_group_data(group)
+    # prefer string and int headers 1..31 on the cleaned group
+    for header in range(1, 32):
+        # try int header first, then string header
+        value = None
+        if header in clean_group.columns:
+            vals = clean_group[header].values.tolist()
+            if vals:
+                value = vals[0]
+        else:
+            hstr = str(header)
+            if hstr in clean_group.columns:
+                vals = clean_group[hstr].values.tolist()
+                if vals:
+                    value = vals[0]
+
+        if value is not None:
+            entry[header] = value
+
+    if entry:
+        schedules.append(entry)
+
+    return schedules
+
+def clean_group_data(group):
+    """Clean the group DataFrame by dropping unnecessary columns and rows."""
+    import pandas as _pd
+
+    # Work on a copy
+    clean_group = group.copy()
+
+    # Normalize/strip string column names and convert empty strings to None
+    orig_cols = list(clean_group.columns)
+    new_cols = []
+    for c in orig_cols:
+        if isinstance(c, str):
+            nc = c.strip()
+            if nc == "":
+                nc = None
+        else:
+            nc = c
+        new_cols.append(nc)
+
+    clean_group.columns = new_cols
+
+    # Build list of columns to keep (exclude None or NaN headers)
+    cols_to_keep = [c for c in clean_group.columns if (c is not None and not (_pd.isna(c)))]
+    clean_group = clean_group.loc[:, cols_to_keep]
+
+    # Drop columns where all elements are NaN
+    clean_group = clean_group.dropna(axis=1, how='all')
+    # Drop rows where all elements are NaN
+    clean_group = clean_group.dropna(axis=0, how='all')
+    return clean_group

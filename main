@@ -6,8 +6,9 @@ excel_file = "mock_data/202509.xlsx"
 sheetIndex = 5
 
 df = pd.read_excel(excel_file, sheet_name=sheetIndex)
-clenDF = df_extension.clean_data(df)
-staffs = staff_extension.create_staffs(clenDF)
+clen_df = df_extension.clean_data(df)
+staffs = staff_extension.create_staffs(clen_df)
 
+# print(df_extension.clean_data(df))
 for s in staffs:
 	print(s.__dict__)

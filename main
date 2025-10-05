@@ -1,0 +1,13 @@
+import pandas as pd
+import usecase.df_extension as df_extension
+import usecase.staff_extension as staff_extension
+
+excel_file = "mock_data/202509.xlsx"
+sheetIndex = 5
+
+df = pd.read_excel(excel_file, sheet_name=sheetIndex)
+clenDF = df_extension.clean_data(df)
+staffs = staff_extension.create_staffs(clenDF)
+
+for s in staffs:
+	print(s.__dict__)

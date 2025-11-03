@@ -8,7 +8,9 @@ sheetIndex = 5
 df = pd.read_excel(excel_file, sheet_name=sheetIndex)
 clen_df = df_extension.clean_data(df)
 staffs = staff_extension.create_staffs(clen_df)
+scheduleList = staff_extension.get_schedule_list(staffs)
 
 # print(df_extension.clean_data(df))
+print(scheduleList)
 for s in staffs:
 	print(s.__dict__)

@@ -23,6 +23,21 @@ def create_staffs(df):
 
     return staffs
 
+
+def _is_missing(v):
+    """Return True if value is considered missing (None, NaN, empty string).
+
+    This is a lightweight replacement for pandas.isna to avoid importing pandas
+    in helper utilities. It handles float('nan'), numpy.nan (via v!=v), None,
+    and empty/blank strings.
+    """
+    if v is None:
+        return True
+    # float NaN
+    if isinstance(v, str) and v.strip() == '':
+        return True
+    return False
+
 def get_schedule_from_row(group):
     """Return a list of cleaned schedule dicts for the given row or group.
 
@@ -33,7 +48,6 @@ def get_schedule_from_row(group):
 
     # Support both string headers '1'..'31' and integer headers 1..31
     numeric_headers = [str(i) for i in range(1, 32)]
-    schedules = []
     entry = {}
 
     clean_group = clean_group_data(group)
@@ -55,15 +69,11 @@ def get_schedule_from_row(group):
         if value is not None:
             entry[header] = value
 
-    if entry:
-        schedules.append(entry)
-
-    return schedules
+    return entry
 
 def clean_group_data(group):
     """Clean the group DataFrame by dropping unnecessary columns and rows."""
-    import pandas as _pd
-
+    # lightweight missing check used instead of pandas.isna
     # Work on a copy
     clean_group = group.copy()
 
@@ -82,7 +92,7 @@ def clean_group_data(group):
     clean_group.columns = new_cols
 
     # Build list of columns to keep (exclude None or NaN headers)
-    cols_to_keep = [c for c in clean_group.columns if (c is not None and not (_pd.isna(c)))]
+    cols_to_keep = [c for c in clean_group.columns if (c is not None and not _is_missing(c))]
     clean_group = clean_group.loc[:, cols_to_keep]
 
     # Drop columns where all elements are NaN
@@ -90,3 +100,13 @@ def clean_group_data(group):
     # Drop rows where all elements are NaN
     clean_group = clean_group.dropna(axis=0, how='all')
     return clean_group
+
+def get_schedule_list(staffs):
+    """Return a list of all staff schedules."""
+    schedules = []
+    for staff in staffs:
+        for k, v in staff.schedule.items():
+            if not _is_missing(v):
+                if not v in schedules:
+                    schedules.append(v)
+    return schedules

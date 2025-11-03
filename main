@@ -1,14 +1,10 @@
 import pandas as pd
 import usecase.df_extension as df_extension
 import usecase.staff_extension as staff_extension
-import configparser
+from model.Config import Config
 
-def read_ini_config(filepath):
-    config = configparser.ConfigParser()
-    config.read(filepath)
-    return config
-
-config_data = read_ini_config('config.txt')
+config = Config('config.ini')
+config_data = config.getData()
 
 excel_file = config_data['base']['excelFile']
 sheetIndex = int(config_data['base']['sheetIndex'])

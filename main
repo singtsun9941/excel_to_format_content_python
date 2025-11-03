@@ -1,9 +1,17 @@
 import pandas as pd
 import usecase.df_extension as df_extension
 import usecase.staff_extension as staff_extension
+import configparser
 
-excel_file = "mock_data/202509.xlsx"
-sheetIndex = 5
+def read_ini_config(filepath):
+    config = configparser.ConfigParser()
+    config.read(filepath)
+    return config
+
+config_data = read_ini_config('config.txt')
+
+excel_file = config_data['base']['excelFile']
+sheetIndex = int(config_data['base']['sheetIndex'])
 
 df = pd.read_excel(excel_file, sheet_name=sheetIndex)
 clen_df = df_extension.clean_data(df)

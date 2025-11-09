@@ -5,6 +5,7 @@ from model.ConfigHelper import ConfigHelper
 
 configHelper = ConfigHelper('config.ini')
 config_data = configHelper.config
+
 excel_file = config_data['base']['excelFile']
 sheetIndex = int(config_data['base']['sheetIndex'])
 
@@ -13,9 +14,6 @@ clen_df = df_extension.clean_data(df)
 staffs = staff_extension.create_staffs(clen_df)
 scheduleList = staff_extension.get_schedule_list(staffs)
 
-# print(df_extension.clean_data(df))
-# print(scheduleList)
-# for s in staffs:
-# 	print(s.__dict__)
+# configHelper.create_schedule_list_txt()
+configHelper.refreshSchedule(scheduleList)
 
-print(config_data['Schedule']['al玲'])
